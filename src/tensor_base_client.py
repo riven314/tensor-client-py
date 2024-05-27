@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING, Any
+
 import requests
 
 from src.constants import TENSOR_URL
 from src.exceptions import InvalidAPIKeyException
 from src.solana_client import SolanaClient
+
+if TYPE_CHECKING:
+    from solders.rpc.responses import SendTransactionResp
 
 
 class TensorBaseClient:
@@ -11,7 +16,7 @@ class TensorBaseClient:
         self.init_client()
         self.solana_client = SolanaClient(private_key=private_key)
 
-    def init_client(self):
+    def init_client(self) -> None:
         """
         Initialize the Tensor Trade client and the `requests` session.
 
@@ -25,7 +30,7 @@ class TensorBaseClient:
             "X-TENSOR-API-KEY": self.api_key,
         }
 
-    def send_query(self, query, variables):
+    def send_query(self, query: str, variables: dict[str, Any]) -> dict:
         """
         Send a query to the Tensor Trade API.
 
@@ -45,11 +50,13 @@ class TensorBaseClient:
             raise Exception(resp.json()["errors"])
         return resp.json().get("data", {})
 
-    def execute_query(self, query: str, variables: dict, name: str):
-        data = self.send_query(query, variables)
-        tx_buffer = self._extract_transaction(data, name)
+    def execute_query(
+        self, query: str, variables: dict[str, Any], name: str
+    ) -> "tuple[dict, SendTransactionResp]":
+        tensor_resp = self.send_query(query, variables)
+        tx_buffer = self._extract_transaction(tensor_resp, name)
         send_tx_resp = self.solana_client.execute_transaction(tx_buffer)
-        return send_tx_resp
+        return tensor_resp, send_tx_resp
 
     def _extract_transaction(self, data: dict, name: str) -> list[int]:
         return data[name]["txs"][0]["tx"]["data"]

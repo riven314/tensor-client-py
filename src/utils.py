@@ -1,4 +1,4 @@
-SOL_UNIT = 1_000_000_000
+from src.constants import SOL_UNIT
 
 
 def to_solami(price: float) -> int:

@@ -143,6 +143,23 @@ USER_TCOMP_BIDS = """query UserTcompBids($owner: String!) {
   }
 }"""
 
+USER_TSWAP_ORDERS = """query UserTswapOrders($owner: String!) {
+  userTswapOrders(owner: $owner) {
+    collName
+    slug
+    pool {
+      address
+      currentActive
+      buyNowPrice
+      createdAt
+      sellNowPrice
+      solBalance
+      startingPrice
+      whitelistAddress
+    }
+  }
+}"""
+
 
 COLLECTION_SLUG_QUERY = """query CollectionsStats(
   $slugsDisplay: [String!],
@@ -160,7 +177,7 @@ COLLECTION_SLUG_QUERY = """query CollectionsStats(
 }"""
 
 
-TENSORSWAP_ACTIVE_ORDERS_QUERY = """query TensorSwapActiveOrders($slug: String!) {
+TSWAP_ACTIVE_ORDERS_QUERY = """query TensorSwapActiveOrders($slug: String!) {
   tswapOrders(slug: $slug) {
     address
     createdUnix
@@ -187,7 +204,28 @@ TENSORSWAP_ACTIVE_ORDERS_QUERY = """query TensorSwapActiveOrders($slug: String!)
   }
 }"""
 
-TCOMP_BID_TX_FOR_COLLECTION_QUERY_FACTORY = partial(
+
+TSWAP_PLACE_COLLECTION_BID_QUERY_FACTORY = """query TswapInitPoolTx(
+  $config: PoolConfig!,
+  $owner: String!,
+  $slug: String!,
+  $depositLamports: Decimal,
+  $topUpMarginWhenBidding: Boolean,
+  $priorityMicroLamports: Int
+) {
+  tswapInitPoolTx(config: $config, owner: $owner, slug: $slug, depositLamports: $depositLamports, topUpMarginWhenBidding: $topUpMarginWhenBidding, priorityMicroLamports: $priorityMicroLamports) {
+    pool
+    txs {
+      lastValidBlockHeight
+      metadata
+      tx
+      txV0
+    }
+  }
+}"""
+
+
+TCOMP_PLACE_COLLECTION_BID_QUERY_FACTORY = partial(
     build_tensor_query,
     name="TcompBidTxForCollection",
     sub_name="tcompBidTx",
@@ -195,7 +233,38 @@ TCOMP_BID_TX_FOR_COLLECTION_QUERY_FACTORY = partial(
 )
 
 
-TCOMP_CANCEL_COLLECTION_BID_TX_QUERY_FACTORY = partial(
+TSWAP_EDIT_COLLECTION_BID_QUERY = """query TswapEditPoolTx($pool: String!, $newConfig: PoolConfig) {
+  tswapEditPoolTx(pool: $pool, newConfig: $newConfig) {
+    txs {
+      lastValidBlockHeight
+      tx
+      txV0
+    }
+  }
+}"""
+
+TSWAP_TOP_UP_COLLECTION_BID_QUERY = """query TswapDepositWithdrawSolRawTx($action: DepositWithdrawAction!, $config: PoolConfig!, $lamports: Decimal!, $owner: String!, $whitelist: String!) {
+  tswapDepositWithdrawSolRawTx(action: $action, config: $config, lamports: $lamports, owner: $owner, whitelist: $whitelist) {
+    txs {
+      lastValidBlockHeight
+      tx
+      txV0
+    }
+  }
+}"""
+
+
+TSWAP_CANCEL_COLLECTION_BID_QUERY_FACTORY = """query TswapClosePoolTx($pool: String!) {
+  tswapClosePoolTx(pool: $pool) {
+    txs {
+      lastValidBlockHeight
+      tx
+      txV0
+    }
+  }
+}"""
+
+TCOMP_CANCEL_COLLECTION_BID_QUERY_FACTORY = partial(
     build_tensor_query,
     name="TcompCancelCollBidTx",
     sub_name="tcompCancelCollBidTx",

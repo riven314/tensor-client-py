@@ -71,7 +71,7 @@ class ActiveListingsV2Response(BaseModel):
     txs: list[ActiveListingTx]
 
 
-class TensorswapActiveOrderResponse(BaseModel):
+class TswapActiveOrderResponse(BaseModel):
     address: str
     createdUnix: int
     curveType: str
@@ -106,17 +106,43 @@ class TensorswapActiveOrderResponse(BaseModel):
         return self.sol_balance >= self.bid_price
 
 
-class UserBidResponse(BaseModel):
+class TswapBidPool(BaseModel):
     address: str
-    amount: str
-    field: str | None
-    fieldId: str | None
-    filledQuantity: int
-    quantity: int
+    currentActive: bool
+    buyNowPrice: str | None
+    createdAt: int
+    sellNowPrice: str | None
     solBalance: str
-    target: str
-    targetId: str
+    startingPrice: str
+    whitelistAddress: str
+
+
+class UserTswapBidResponse(BaseModel):
+    collName: str
+    slug: str
+    pool: TswapBidPool
+
+    @property
+    def whitelist_address(self) -> str:
+        return self.pool.whitelistAddress
+
+    @property
+    def pool_address(self) -> str:
+        return self.pool.address
 
     @property
     def sol_balance(self) -> float:
-        return from_solami(float(self.solBalance))
+        return from_solami(float(self.pool.solBalance))
+
+    @property
+    def bid_price(self) -> float | None:
+        if not self.pool.sellNowPrice:
+            return None
+        return from_solami(float(self.pool.sellNowPrice))
+
+    @property
+    def is_in_effect(self) -> bool:
+        if not self.bid_price:
+            print(f"Bid price is None, something is wrong: {self.pool}")
+            return False
+        return self.sol_balance >= self.bid_price
