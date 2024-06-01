@@ -243,10 +243,9 @@ TSWAP_EDIT_COLLECTION_BID_QUERY = """query TswapEditPoolTx($pool: String!, $newC
   }
 }"""
 
-TSWAP_TOP_UP_COLLECTION_BID_QUERY = """query TswapDepositWithdrawSolRawTx($action: DepositWithdrawAction!, $config: PoolConfig!, $lamports: Decimal!, $owner: String!, $whitelist: String!) {
-  tswapDepositWithdrawSolRawTx(action: $action, config: $config, lamports: $lamports, owner: $owner, whitelist: $whitelist) {
+TSWAP_TOP_UP_COLLECTION_BID_QUERY = """query TswapDepositWithdrawSolTx($action: DepositWithdrawAction!, $lamports: Decimal!, $pool: String!) {
+  tswapDepositWithdrawSolTx(action: $action, lamports: $lamports, pool: $pool) {
     txs {
-      lastValidBlockHeight
       tx
       txV0
     }

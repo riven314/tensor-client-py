@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
-import src.models as models
-import src.queries as queries
-from src.tensor_base_client import TensorBaseClient
+import src.tensor.models as models
+import src.tensor.queries as queries
+from src.tensor.base_client import TensorBaseClient
 from src.utils import to_solami
 
 
@@ -88,31 +88,17 @@ class TensorClient(TensorBaseClient):
             name="tswapEditPoolTx",
         )
 
-    def top_up_collection_bid(
-        self, whitelist_address: str, top_up: float, price: float
-    ):
-        wallet_address = self.solana_client.wallet_address
-        price_in_solami = str(to_solami(price))
-        top_up_in_solami = str(to_solami(top_up))
-        config = {
-            "poolType": "TOKEN",
-            "curveType": "EXPONENTIAL",
-            "startingPrice": price_in_solami,
-            "delta": "0",
-            "mmFeeBps": None,
-            "mmCompoundFees": True,
-        }
+    def top_up_collection_bid(self, pool_address: str, amount: float):
+        amount_in_solami = str(to_solami(amount))
         variables = {
             "action": "DEPOSIT",
-            "config": config,
-            "lamports": top_up_in_solami,
-            "owner": wallet_address,
-            "whitelist": whitelist_address,
+            "lamports": amount_in_solami,
+            "pool": pool_address,
         }
         return self.execute_query(
             query=queries.TSWAP_TOP_UP_COLLECTION_BID_QUERY,
             variables=variables,
-            name="tswapDepositWithdrawSolRawTx",
+            name="tswapDepositWithdrawSolTx",
         )
 
     def cancel_nft_collection_bid(self, pool_address: str):
