@@ -4,7 +4,7 @@ import requests
 
 from src.constants import TENSOR_URL
 from src.exceptions import InvalidAPIKeyException
-from src.solana_rpc.rpc_client import SolanaRpcClient
+from src.solana_rpc.native_client import SolanaNativeClient
 
 if TYPE_CHECKING:
     from solders.rpc.responses import SendTransactionResp
@@ -14,7 +14,7 @@ class TensorBaseClient:
     def __init__(self, api_key: str, private_key: str):
         self.api_key = api_key
         self.init_client()
-        self.solana_client = SolanaRpcClient(private_key=private_key)
+        self.solana_client = SolanaNativeClient(private_key=private_key)
 
     def init_client(self) -> None:
         """

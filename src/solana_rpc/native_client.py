@@ -5,7 +5,7 @@ from src.constants import SOLANA_RPC_ENDPOINT
 from src.solana_rpc.base_client import SolanaBaseClient
 
 
-class SolanaRpcClient(SolanaBaseClient):
+class SolanaNativeClient(SolanaBaseClient):
     def __init__(self, private_key: str) -> None:
         url = SOLANA_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
