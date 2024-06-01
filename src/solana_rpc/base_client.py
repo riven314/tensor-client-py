@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from solana.rpc.api import Client
+from solders.hash import Hash
 from solders.keypair import Keypair
 from solders.rpc.responses import SendTransactionResp
 
@@ -16,7 +17,9 @@ class SolanaBaseClient(ABC):
         return str(self.keypair.pubkey())
 
     @abstractmethod
-    def execute_transaction(self, tx_buffer: list[int]) -> SendTransactionResp: ...
+    def execute_transaction(
+        self, tx_buffer: list[int], recent_blockhash: Hash | None
+    ) -> SendTransactionResp: ...
 
     @staticmethod
     def get_keypair_from_private_key(private_key: str) -> Keypair:

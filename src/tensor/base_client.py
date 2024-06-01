@@ -4,6 +4,7 @@ import requests
 
 from src.constants import TENSOR_URL
 from src.exceptions import InvalidAPIKeyException
+from src.solana_rpc.jito_client import SolanaJitoClient
 from src.solana_rpc.native_client import SolanaNativeClient
 
 if TYPE_CHECKING:
@@ -15,6 +16,7 @@ class TensorBaseClient:
         self.api_key = api_key
         self.init_client()
         self.solana_client = SolanaNativeClient(private_key=private_key)
+        self.jito_client = SolanaJitoClient(private_key=private_key)
 
     def init_client(self) -> None:
         """
@@ -50,12 +52,21 @@ class TensorBaseClient:
             raise Exception(resp.json()["errors"])
         return resp.json().get("data", {})
 
-    def execute_query(
+    def execute_query_by_native(
         self, query: str, variables: dict[str, Any], name: str
     ) -> "tuple[dict, SendTransactionResp]":
         tensor_resp = self.send_query(query, variables)
         tx_buffer = self._extract_transaction(tensor_resp, name)
         send_tx_resp = self.solana_client.execute_transaction(tx_buffer)
+        return tensor_resp, send_tx_resp
+
+    def execute_query_by_jito(
+        self, query: str, variables: dict[str, Any], name: str
+    ) -> "tuple[dict, SendTransactionResp]":
+        tensor_resp = self.send_query(query, variables)
+        tx_buffer = self._extract_transaction(tensor_resp, name)
+        recent_blockhash = self.solana_client.get_latest_blockhash()
+        send_tx_resp = self.jito_client.execute_transaction(tx_buffer, recent_blockhash)
         return tensor_resp, send_tx_resp
 
     def _extract_transaction(self, data: dict, name: str) -> list[int]:

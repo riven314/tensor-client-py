@@ -1,5 +1,3 @@
-from typing import TYPE_CHECKING
-
 import src.tensor.models as models
 import src.tensor.queries as queries
 from src.tensor.base_client import TensorBaseClient
@@ -43,7 +41,11 @@ class TensorClient(TensorBaseClient):
         )
         return active_bids
 
-    def place_nft_collection_bid(self, slug: str, price: float, quantity: int):
+    def place_nft_collection_bid(
+        self, slug: str, price: float, quantity: int, rpc: str
+    ):
+        assert rpc in ("native", "jito"), "Invalid RPC type"
+
         wallet_address = self.solana_client.wallet_address
         price_in_solami = str(to_solami(price))
         deposit_in_solami = str(to_solami(price * quantity))
@@ -62,13 +64,19 @@ class TensorClient(TensorBaseClient):
             "topUpMarginWhenBidding": True,
             "priorityMicroLamports": 50000,
         }
-        return self.execute_query(
+
+        rpc_method = (
+            self.execute_query_by_native
+            if rpc == "native"
+            else self.execute_query_by_jito
+        )
+        return rpc_method(
             query=queries.TSWAP_PLACE_COLLECTION_BID_QUERY_FACTORY,
             variables=variables,
             name="tswapInitPoolTx",
         )
 
-    def edit_nft_collection_bid(self, pool_address: str, price: float):
+    def edit_nft_collection_bid(self, pool_address: str, price: float, rpc: str):
         price_in_solami = str(to_solami(price))
         new_config = {
             "poolType": "TOKEN",
@@ -82,29 +90,44 @@ class TensorClient(TensorBaseClient):
             "pool": pool_address,
             "newConfig": new_config,
         }
-        return self.execute_query(
+        rpc_method = (
+            self.execute_query_by_native
+            if rpc == "native"
+            else self.execute_query_by_jito
+        )
+        return rpc_method(
             query=queries.TSWAP_EDIT_COLLECTION_BID_QUERY,
             variables=variables,
             name="tswapEditPoolTx",
         )
 
-    def top_up_collection_bid(self, pool_address: str, amount: float):
+    def top_up_collection_bid(self, pool_address: str, amount: float, rpc: str):
         amount_in_solami = str(to_solami(amount))
         variables = {
             "action": "DEPOSIT",
             "lamports": amount_in_solami,
             "pool": pool_address,
         }
-        return self.execute_query(
+        rpc_method = (
+            self.execute_query_by_native
+            if rpc == "native"
+            else self.execute_query_by_jito
+        )
+        return rpc_method(
             query=queries.TSWAP_TOP_UP_COLLECTION_BID_QUERY,
             variables=variables,
             name="tswapDepositWithdrawSolTx",
         )
 
-    def cancel_nft_collection_bid(self, pool_address: str):
+    def cancel_nft_collection_bid(self, pool_address: str, rpc: str):
         variables = {"pool": pool_address}
-        return self.execute_query(
-            queries.TSWAP_CANCEL_COLLECTION_BID_TX_QUERY,
+        rpc_method = (
+            self.execute_query_by_native
+            if rpc == "native"
+            else self.execute_query_by_jito
+        )
+        return rpc_method(
+            queries.TSWAP_CANCEL_COLLECTION_BID_QUERY_FACTORY,
             variables,
             name="tswapClosePoolTx",
         )

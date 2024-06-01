@@ -1,9 +1,9 @@
-from src.constants import SOL_UNIT
+from src.constants import SOLAMI_UNIT
 
 
 def to_solami(price: float) -> int:
-    return int(price * SOL_UNIT)
+    return int(price * SOLAMI_UNIT)
 
 
 def from_solami(price):
-    return float(price) / SOL_UNIT
+    return float(price) / SOLAMI_UNIT
