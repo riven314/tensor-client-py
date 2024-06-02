@@ -1,6 +1,7 @@
 from solana.transaction import Transaction
 from solders.hash import Hash
 from solders.rpc.responses import SendTransactionResp
+from solders.transaction_status import TransactionConfirmationStatus
 
 from src.constants import SOLANA_RPC_ENDPOINT
 from src.solana_rpc.base_client import SolanaBaseClient
@@ -24,4 +25,13 @@ class SolanaNativeClient(SolanaBaseClient):
         blockhash_resp = self.client.get_latest_blockhash()
         return self.client._process_blockhash_resp(
             blockhash_resp, used_immediately=True
+        )
+
+    def get_transaction_status(
+        self, transaction_resp: SendTransactionResp
+    ) -> TransactionConfirmationStatus | None:
+        status_resp = self.client.get_signature_statuses([transaction_resp.value])
+        assert len(status_resp.value) == 1
+        return (
+            status_resp.value[0].confirmation_status if status_resp.value[0] else None
         )
