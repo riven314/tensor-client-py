@@ -1,3 +1,5 @@
+from retry import retry
+from solana.exceptions import SolanaRpcException
 from solana.transaction import Transaction
 from solders.hash import Hash
 from solders.rpc.responses import SendTransactionResp
@@ -12,6 +14,7 @@ class SolanaNativeClient(SolanaBaseClient):
         url = SOLANA_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
+    @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2)
     def execute_transaction(
         self, tx_buffer: list[int], recent_blockhash: Hash | None = None
     ) -> SendTransactionResp:

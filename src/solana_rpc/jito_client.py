@@ -10,7 +10,6 @@ from solders.rpc.responses import SendTransactionResp
 from solders.system_program import TransferParams, transfer
 
 from src.constants import JITO_RPC_ENDPOINT, JITO_TIP_ACCOUNTS, JITO_TIP_IN_SOLAMI
-from src.logger import logger
 from src.solana_rpc.base_client import SolanaBaseClient
 
 
@@ -19,7 +18,7 @@ class SolanaJitoClient(SolanaBaseClient):
         url = JITO_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
-    @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2, logger=logger)
+    @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2)
     def execute_transaction(
         self,
         tx_buffer: list[int],
