@@ -1,5 +1,9 @@
+from solders.rpc.responses import SendTransactionResp
+from solders.transaction_status import TransactionConfirmationStatus
+
 import src.tensor.models as models
 import src.tensor.queries as queries
+from src.logger import logger
 from src.tensor.base_client import TensorBaseClient
 from src.utils import to_solami
 
@@ -18,7 +22,7 @@ class TensorClient(TensorBaseClient):
         variables = {"slugsDisplay": [slug_display]}
         data = self.send_query(queries.COLLECTION_SLUG_QUERY, variables)
         if len(data["allCollections"]["collections"]) == 0:
-            print("No collection found for mint")
+            logger.warning("No collection found for mint")
             return None
         return data["allCollections"]["collections"][0]["slug"]
 
@@ -131,6 +135,11 @@ class TensorClient(TensorBaseClient):
             variables,
             name="tswapClosePoolTx",
         )
+
+    def get_transaction_status(
+        self, transaction_resp: SendTransactionResp
+    ) -> TransactionConfirmationStatus | None:
+        return self.solana_client.get_transaction_status(transaction_resp)
 
 
 #     send_tx_resp = client.set_cnft_collection_bid(slug=slug, price=0.18, quantity=1)

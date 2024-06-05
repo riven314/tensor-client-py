@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from src.logger import logger
 from src.utils import from_solami
 
 
@@ -135,14 +136,13 @@ class UserTswapBidResponse(BaseModel):
         return from_solami(float(self.pool.solBalance))
 
     @property
-    def bid_price(self) -> float | None:
-        if not self.pool.sellNowPrice:
-            return None
+    def bid_price(self) -> float:
+        assert self.pool.sellNowPrice
         return from_solami(float(self.pool.sellNowPrice))
 
     @property
     def is_in_effect(self) -> bool:
         if not self.bid_price:
-            print(f"Bid price is None, something is wrong: {self.pool}")
+            logger.warning(f"Bid price is None, something is wrong: {self.pool}")
             return False
         return self.sol_balance >= self.bid_price

@@ -28,6 +28,7 @@ class SolanaJitoClient(SolanaBaseClient):
             tip_in_solami=int(JITO_TIP_IN_SOLAMI)
         )
         transaction.add(tip_instruction)
+        # TODO: handle SolanaRpcException
         response = self.client.send_transaction(
             transaction, self.keypair, recent_blockhash=recent_blockhash
         )

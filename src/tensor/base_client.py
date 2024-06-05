@@ -3,7 +3,11 @@ from typing import TYPE_CHECKING, Any
 import requests
 
 from src.constants import TENSOR_URL
-from src.exceptions import InvalidAPIKeyException
+from src.exceptions import (
+    InvalidAPIKeyError,
+    TensorServerOverloadError,
+    UnknownAPIError,
+)
 from src.solana_rpc.jito_client import SolanaJitoClient
 from src.solana_rpc.native_client import SolanaNativeClient
 
@@ -44,12 +48,15 @@ class TensorBaseClient:
             TENSOR_URL,
             json={"query": query, "variables": variables},
         )
-        if resp.status_code == 403:
-            raise InvalidAPIKeyException
-        if resp.status_code != 200:
+        if resp.status_code == 520:
+            raise TensorServerOverloadError
+        elif resp.status_code == 403:
+            raise InvalidAPIKeyError
+        elif resp.status_code != 200:
             raise Exception(resp.text)
-        if resp.status_code == 200 and "errors" in resp.json():
-            raise Exception(resp.json()["errors"])
+        elif resp.status_code == 200 and "errors" in resp.json():
+            raise UnknownAPIError(resp.json()["errors"])
+
         return resp.json().get("data", {})
 
     def execute_query_by_native(
