@@ -10,6 +10,7 @@ from src.exceptions import (
     UnclassifiedStatusCodeError,
     UnknownAPIError,
 )
+from src.logger import logger
 from src.solana_rpc.jito_client import SolanaJitoClient
 from src.solana_rpc.native_client import SolanaNativeClient
 
@@ -47,6 +48,7 @@ class TensorBaseClient:
         tries=4,
         delay=3,
         backoff=2,
+        logger=logger,
     )
     def send_query(self, query: str, variables: dict[str, Any]) -> dict:
         """

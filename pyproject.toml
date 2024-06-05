@@ -9,8 +9,8 @@ python = "^3.10"
 requests = "^2.32.3"
 solana = "^0.30.2"
 loguru = "^0.7.2"
-retry = "^0.9.2"
 pydantic = "^2.7.3"
+retry = {git = "https://github.com/riven314/retry.git"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"

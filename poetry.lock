@@ -984,18 +984,22 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "retry"
-version = "0.9.2"
+version = "0.9.3.dev101"
 description = "Easy to use retry decorator."
 optional = false
-python-versions = "*"
-files = [
-    {file = "retry-0.9.2-py2.py3-none-any.whl", hash = "sha256:ccddf89761fa2c726ab29391837d4327f819ea14d244c232a1d24c67a2f98606"},
-    {file = "retry-0.9.2.tar.gz", hash = "sha256:f8bfa8b99b69c4506d6f5bd3b0aabf77f98cdb17f3c9fc3f5ca820033336fba4"},
-]
+python-versions = ">=2.6"
+files = []
+develop = false
 
 [package.dependencies]
 decorator = ">=3.4.2"
 py = ">=1.4.26,<2.0.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/riven314/retry.git"
+reference = "HEAD"
+resolved_reference = "1a08a30344fd5af77d76fb6bf0655f1315f6b5ed"
 
 [[package]]
 name = "rfc3986"
@@ -1282,4 +1286,4 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "46c9859fd6352ab5d0c2ce3f18c41583642b9563537a0c01a0f708eaf3499459"
+content-hash = "0951cee982c1658765ddb3ed506f78902fdf7600e9a7e098f55146e8a580c47a"

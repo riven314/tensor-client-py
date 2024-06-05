@@ -6,6 +6,7 @@ from solders.rpc.responses import SendTransactionResp
 from solders.transaction_status import TransactionConfirmationStatus
 
 from src.constants import SOLANA_RPC_ENDPOINT
+from src.logger import logger
 from src.solana_rpc.base_client import SolanaBaseClient
 
 
@@ -14,7 +15,7 @@ class SolanaNativeClient(SolanaBaseClient):
         url = SOLANA_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
-    @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2)
+    @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2, logger=logger)
     def execute_transaction(
         self, tx_buffer: list[int], recent_blockhash: Hash | None = None
     ) -> SendTransactionResp:
