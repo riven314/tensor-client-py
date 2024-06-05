@@ -11,7 +11,7 @@ solana = "^0.30.2"
 loguru = "^0.7.2"
 pydantic = "^2.7.3"
 # my fork make retry compatible with loguru
-retry = { git = "https://github.com/riven314/retry.git" }
+retry = {git = "https://github.com/riven314/retry.git"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"

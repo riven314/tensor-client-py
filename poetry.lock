@@ -999,7 +999,7 @@ py = ">=1.4.26,<2.0.0"
 type = "git"
 url = "https://github.com/riven314/retry.git"
 reference = "HEAD"
-resolved_reference = "1a08a30344fd5af77d76fb6bf0655f1315f6b5ed"
+resolved_reference = "5ada1b9cec568e26885405450069c50b515a525d"
 
 [[package]]
 name = "rfc3986"
