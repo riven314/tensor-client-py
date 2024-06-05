@@ -1,13 +1,16 @@
 from typing import TYPE_CHECKING, Any
 
 import requests
+from retry import retry
 
 from src.constants import TENSOR_URL
 from src.exceptions import (
     InvalidAPIKeyError,
     TensorServerOverloadError,
+    UnclassifiedStatusCodeError,
     UnknownAPIError,
 )
+from src.logger import logger
 from src.solana_rpc.jito_client import SolanaJitoClient
 from src.solana_rpc.native_client import SolanaNativeClient
 
@@ -36,6 +39,17 @@ class TensorBaseClient:
             "X-TENSOR-API-KEY": self.api_key,
         }
 
+    @retry(
+        exceptions=(
+            TensorServerOverloadError,
+            UnclassifiedStatusCodeError,
+            UnknownAPIError,
+        ),
+        tries=4,
+        delay=3,
+        backoff=2,
+        logger=logger,
+    )
     def send_query(self, query: str, variables: dict[str, Any]) -> dict:
         """
         Send a query to the Tensor Trade API.
@@ -48,12 +62,15 @@ class TensorBaseClient:
             TENSOR_URL,
             json={"query": query, "variables": variables},
         )
-        if resp.status_code == 520:
-            raise TensorServerOverloadError
-        elif resp.status_code == 403:
+
+        if resp.status_code == 403:
             raise InvalidAPIKeyError
+        elif resp.status_code == 520:
+            raise TensorServerOverloadError
         elif resp.status_code != 200:
-            raise Exception(resp.text)
+            raise UnclassifiedStatusCodeError(
+                f"Unclassified Status code: {resp.status_code}, Text: {resp.text}"
+            )
         elif resp.status_code == 200 and "errors" in resp.json():
             raise UnknownAPIError(resp.json()["errors"])
 

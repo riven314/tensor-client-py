@@ -1,5 +1,7 @@
 from random import sample
 
+from retry import retry
+from solana.exceptions import SolanaRpcException
 from solana.transaction import Transaction
 from solders.hash import Hash
 from solders.instruction import Instruction
@@ -8,6 +10,7 @@ from solders.rpc.responses import SendTransactionResp
 from solders.system_program import TransferParams, transfer
 
 from src.constants import JITO_RPC_ENDPOINT, JITO_TIP_ACCOUNTS, JITO_TIP_IN_SOLAMI
+from src.logger import logger
 from src.solana_rpc.base_client import SolanaBaseClient
 
 
@@ -16,6 +19,7 @@ class SolanaJitoClient(SolanaBaseClient):
         url = JITO_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
+    @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2, logger=logger)
     def execute_transaction(
         self,
         tx_buffer: list[int],
@@ -28,7 +32,6 @@ class SolanaJitoClient(SolanaBaseClient):
             tip_in_solami=int(JITO_TIP_IN_SOLAMI)
         )
         transaction.add(tip_instruction)
-        # TODO: handle SolanaRpcException
         response = self.client.send_transaction(
             transaction, self.keypair, recent_blockhash=recent_blockhash
         )

@@ -8,3 +8,7 @@ class TensorServerOverloadError(Exception):
 
 class UnknownAPIError(Exception):
     pass
+
+
+class UnclassifiedStatusCodeError(Exception):
+    pass
