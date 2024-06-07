@@ -86,7 +86,7 @@ class TswapActiveOrderResponse(BaseModel):
     solBalance: str
     startingPrice: str
     buyNowPrice: str | None
-    sellNowPrice: str
+    sellNowPrice: str | None
     statsAccumulatedMmProfit: str
     statsTakerBuyCount: int
     statsTakerSellCount: int
@@ -95,8 +95,8 @@ class TswapActiveOrderResponse(BaseModel):
     updatedAt: int
 
     @property
-    def bid_price(self) -> float:
-        return from_solami(float(self.sellNowPrice))
+    def bid_price(self) -> float | None:
+        return from_solami(float(self.sellNowPrice)) if self.sellNowPrice else None
 
     @property
     def sol_balance(self) -> float:
@@ -104,6 +104,8 @@ class TswapActiveOrderResponse(BaseModel):
 
     @property
     def is_in_effect(self) -> bool:
+        if not self.bid_price:
+            return False
         return self.sol_balance >= self.bid_price
 
 

@@ -1,7 +1,9 @@
 from typing import TYPE_CHECKING, Any
 
 import requests
+from requests.exceptions import ConnectionError, HTTPError, Timeout, TooManyRedirects
 from retry import retry
+from solana.exceptions import SolanaRpcException
 
 from src.constants import TENSOR_URL
 from src.exceptions import (
@@ -39,11 +41,16 @@ class TensorBaseClient:
             "X-TENSOR-API-KEY": self.api_key,
         }
 
+    @logger.catch(reraise=True)
     @retry(
         exceptions=(
             TensorServerOverloadError,
             UnclassifiedStatusCodeError,
             UnknownAPIError,
+            ConnectionError,
+            Timeout,
+            TooManyRedirects,
+            HTTPError,
         ),
         tries=4,
         delay=3,
@@ -92,6 +99,22 @@ class TensorBaseClient:
         recent_blockhash = self.solana_client.get_latest_blockhash()
         send_tx_resp = self.jito_client.execute_transaction(tx_buffer, recent_blockhash)
         return tensor_resp, send_tx_resp
+
+    def execute_query_with_fallback(
+        self, query: str, variables: dict[str, Any], name: str
+    ) -> "tuple[dict, SendTransactionResp]":
+        try:
+            return self.execute_query_by_jito(query, variables, name)
+        except SolanaRpcException:
+            logger.warning(
+                "Jito transaction execution failed due to SolanaRpcException, falling back to native Solana RPC"
+            )
+            return self.execute_query_by_native(query, variables, name)
+        except Exception as e:
+            logger.warning(
+                f"Jito transaction execution failed due to {e.__class__.__name__}, falling back to native Solana RPC"
+            )
+            return self.execute_query_by_native(query, variables, name)
 
     def _extract_transaction(self, data: dict, name: str) -> list[int]:
         return data[name]["txs"][0]["tx"]["data"]

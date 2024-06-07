@@ -19,6 +19,7 @@ class SolanaJitoClient(SolanaBaseClient):
         url = JITO_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
+    @logger.catch(reraise=True)
     @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2, logger=logger)
     def execute_transaction(
         self,

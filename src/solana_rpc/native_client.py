@@ -15,6 +15,7 @@ class SolanaNativeClient(SolanaBaseClient):
         url = SOLANA_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
+    @logger.catch(reraise=True)
     @retry(exceptions=(SolanaRpcException,), tries=4, delay=3, backoff=2, logger=logger)
     def execute_transaction(
         self, tx_buffer: list[int], recent_blockhash: Hash | None = None
