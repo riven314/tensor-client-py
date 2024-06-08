@@ -2,12 +2,15 @@ import datetime
 import random
 
 import requests
+import urllib3
 from requests import Response
 from requests.exceptions import HTTPError
 from retry import retry
 
 from src.constants import PROXY_REPO_URL
 from src.logger import logger
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class ProxyRotator:
