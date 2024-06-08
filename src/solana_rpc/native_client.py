@@ -33,9 +33,15 @@ class SolanaNativeClient(SolanaBaseClient):
         )
 
     def get_transaction_status(
-        self, transaction_resp: SendTransactionResp
+        self,
+        transaction_resp: SendTransactionResp,
+        search_transaction_history: bool = True,
     ) -> TransactionConfirmationStatus | None:
-        status_resp = self.client.get_signature_statuses([transaction_resp.value])
+        # search_transaction_history is False, it would only search on the recent status cache from RPC node
+        status_resp = self.client.get_signature_statuses(
+            [transaction_resp.value],
+            search_transaction_history=search_transaction_history,
+        )
         assert len(status_resp.value) == 1
         return (
             status_resp.value[0].confirmation_status if status_resp.value[0] else None

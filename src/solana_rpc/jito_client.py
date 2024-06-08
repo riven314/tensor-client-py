@@ -2,6 +2,7 @@ from random import sample
 
 from retry import retry
 from solana.exceptions import SolanaRpcException
+from solana.rpc.types import URI
 from solana.transaction import Transaction
 from solders.hash import Hash
 from solders.instruction import Instruction
@@ -9,14 +10,19 @@ from solders.pubkey import Pubkey
 from solders.rpc.responses import SendTransactionResp
 from solders.system_program import TransferParams, transfer
 
-from src.constants import JITO_RPC_ENDPOINT, JITO_TIP_ACCOUNTS, JITO_TIP_IN_SOLAMI
+from src.constants import (
+    JITO_MAIN_RPC_ENDPOINT,
+    JITO_RPC_ENDPOINTS,
+    JITO_TIP_ACCOUNTS,
+    JITO_TIP_IN_SOLAMI,
+)
 from src.logger import logger
 from src.solana_rpc.base_client import SolanaBaseClient
 
 
 class SolanaJitoClient(SolanaBaseClient):
     def __init__(self, private_key: str) -> None:
-        url = JITO_RPC_ENDPOINT
+        url = JITO_MAIN_RPC_ENDPOINT
         super().__init__(url=url, private_key=private_key)
 
     @logger.catch(reraise=True)
@@ -27,16 +33,21 @@ class SolanaJitoClient(SolanaBaseClient):
         recent_blockhash: Hash | None,
     ) -> SendTransactionResp:
         assert recent_blockhash, "Recent blockhash is required for Jito transactions"
-
         transaction = Transaction.deserialize(bytes(tx_buffer))
         tip_instruction = self.get_tip_instruction(
             tip_in_solami=int(JITO_TIP_IN_SOLAMI)
         )
         transaction.add(tip_instruction)
+        # self.rotate_rpc_endpoint()
         response = self.client.send_transaction(
             transaction, self.keypair, recent_blockhash=recent_blockhash
         )
         return response
+
+    def rotate_rpc_endpoint(self) -> None:
+        new_endpoint = sample(JITO_RPC_ENDPOINTS, 1)[0]
+        self.rpc_endpoint = URI(new_endpoint)
+        logger.info(f"Jito RPC endpoint rotated to {new_endpoint}")
 
     def get_tip_instruction(self, tip_in_solami: int) -> Instruction:
         tip_account = sample(JITO_TIP_ACCOUNTS, 1)[0]
