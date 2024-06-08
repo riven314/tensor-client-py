@@ -41,7 +41,7 @@ class SolanaProxyJitoClient:
     # ProxyError reflects malfunction of proxy
     # HTTPError reflects error from requests (Too Many Request Error)
     @logger.catch(reraise=True)
-    @retry(exceptions=(HTTPError,), tries=30, delay=2, logger=logger)
+    @retry(exceptions=(HTTPError,), tries=60, delay=1, logger=logger)
     @retry(exceptions=(ProxyError,), tries=60, delay=1, logger=logger)
     def send_jito_transaction(
         self, transaction: Transaction, recent_blockhash: Hash
