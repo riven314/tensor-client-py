@@ -13,7 +13,9 @@ from src.exceptions import (
     UnknownAPIError,
 )
 from src.logger import logger
-from src.solana_rpc.jito_client import SolanaJitoClient
+
+# from src.solana_rpc.jito_client import SolanaJitoClient
+from src.solana_rpc.jito_proxy_client import SolanaProxyJitoClient
 from src.solana_rpc.native_client import SolanaNativeClient
 
 if TYPE_CHECKING:
@@ -25,7 +27,9 @@ class TensorBaseClient:
         self.api_key = api_key
         self.init_client()
         self.solana_client = SolanaNativeClient(private_key=private_key)
-        self.jito_client = SolanaJitoClient(private_key=private_key)
+        self.jito_client = SolanaProxyJitoClient(
+            private_key=private_key, proxy_reload_sec=60 * 30
+        )
 
     def init_client(self) -> None:
         """
