@@ -32,6 +32,7 @@ class SolanaNativeClient(SolanaBaseClient):
             blockhash_resp, used_immediately=True
         )
 
+    @retry(exceptions=(SolanaRpcException,), tries=4, delay=2, backoff=2, logger=logger)
     def get_transaction_status(
         self,
         transaction_resp: SendTransactionResp,
@@ -42,6 +43,7 @@ class SolanaNativeClient(SolanaBaseClient):
             [transaction_resp.value],
             search_transaction_history=search_transaction_history,
         )
+        logger.debug(f"Transaction status: {status_resp.to_json()}")
         assert len(status_resp.value) == 1
         return (
             status_resp.value[0].confirmation_status if status_resp.value[0] else None

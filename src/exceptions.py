@@ -12,3 +12,7 @@ class UnknownAPIError(Exception):
 
 class UnclassifiedStatusCodeError(Exception):
     pass
+
+
+class TransactionMissingError(Exception):
+    pass
