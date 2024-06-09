@@ -205,7 +205,7 @@ TSWAP_ACTIVE_ORDERS_QUERY = """query TensorSwapActiveOrders($slug: String!) {
 }"""
 
 
-TSWAP_PLACE_COLLECTION_BID_QUERY_FACTORY = """query TswapInitPoolTx(
+TSWAP_PLACE_COLLECTION_BID_QUERY = """query TswapInitPoolTx(
   $config: PoolConfig!,
   $owner: String!,
   $slug: String!,
@@ -253,7 +253,7 @@ TSWAP_TOP_UP_COLLECTION_BID_QUERY = """query TswapDepositWithdrawSolTx($action: 
 }"""
 
 
-TSWAP_CANCEL_COLLECTION_BID_QUERY_FACTORY = """query TswapClosePoolTx($pool: String!) {
+TSWAP_CANCEL_COLLECTION_BID_QUERY = """query TswapClosePoolTx($pool: String!) {
   tswapClosePoolTx(pool: $pool) {
     txs {
       lastValidBlockHeight
