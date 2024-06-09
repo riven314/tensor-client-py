@@ -3,6 +3,7 @@ from solders.transaction_status import TransactionConfirmationStatus
 
 import src.tensor.models as models
 import src.tensor.queries as queries
+from src.constants import RPCMethod
 from src.logger import logger
 from src.tensor.base_client import TensorBaseClient
 from src.utils import to_solami
@@ -45,7 +46,9 @@ class TensorClient(TensorBaseClient):
         )
         return active_bids
 
-    def place_nft_collection_bid(self, slug: str, price: float, quantity: int):
+    def place_nft_collection_bid(
+        self, slug: str, price: float, quantity: int, rpc_method: RPCMethod
+    ):
         wallet_address = self.solana_client.wallet_address
         price_in_solami = str(to_solami(price))
         deposit_in_solami = str(to_solami(price * quantity))
@@ -64,13 +67,16 @@ class TensorClient(TensorBaseClient):
             "topUpMarginWhenBidding": True,
             "priorityMicroLamports": 50000,
         }
-        return self.execute_query_with_fallback(
-            query=queries.TSWAP_PLACE_COLLECTION_BID_QUERY_FACTORY,
+        return self._execute_query(
+            query=queries.TSWAP_PLACE_COLLECTION_BID_QUERY,
             variables=variables,
             name="tswapInitPoolTx",
+            rpc_method=rpc_method,
         )
 
-    def edit_nft_collection_bid(self, pool_address: str, price: float):
+    def edit_nft_collection_bid(
+        self, pool_address: str, price: float, rpc_method: RPCMethod
+    ):
         price_in_solami = str(to_solami(price))
         new_config = {
             "poolType": "TOKEN",
@@ -84,31 +90,36 @@ class TensorClient(TensorBaseClient):
             "pool": pool_address,
             "newConfig": new_config,
         }
-        return self.execute_query_with_fallback(
+        return self._execute_query(
             query=queries.TSWAP_EDIT_COLLECTION_BID_QUERY,
             variables=variables,
             name="tswapEditPoolTx",
+            rpc_method=rpc_method,
         )
 
-    def top_up_collection_bid(self, pool_address: str, amount: float):
+    def top_up_collection_bid(
+        self, pool_address: str, amount: float, rpc_method: RPCMethod
+    ):
         amount_in_solami = str(to_solami(amount))
         variables = {
             "action": "DEPOSIT",
             "lamports": amount_in_solami,
             "pool": pool_address,
         }
-        return self.execute_query_with_fallback(
+        return self._execute_query(
             query=queries.TSWAP_TOP_UP_COLLECTION_BID_QUERY,
             variables=variables,
             name="tswapDepositWithdrawSolTx",
+            rpc_method=rpc_method,
         )
 
-    def cancel_nft_collection_bid(self, pool_address: str):
+    def cancel_nft_collection_bid(self, pool_address: str, rpc_method: RPCMethod):
         variables = {"pool": pool_address}
-        return self.execute_query_with_fallback(
-            queries.TSWAP_CANCEL_COLLECTION_BID_QUERY_FACTORY,
-            variables,
+        return self._execute_query(
+            query=queries.TSWAP_CANCEL_COLLECTION_BID_QUERY,
+            variables=variables,
             name="tswapClosePoolTx",
+            rpc_method=rpc_method,
         )
 
     def get_transaction_status(
@@ -116,14 +127,17 @@ class TensorClient(TensorBaseClient):
     ) -> TransactionConfirmationStatus | None:
         return self.solana_client.get_transaction_status(transaction_resp)
 
-
-#     send_tx_resp = client.set_cnft_collection_bid(slug=slug, price=0.18, quantity=1)
-#     status_tx = client.solana_client.client.get_signature_statuses([send_tx_resp.value])
-#     while ((status := status_tx.value[0]) is None) or (
-#         (status := status_tx.value[0].confirmation_status)
-#     ) != TransactionConfirmationStatus.Finalized:
-#         print(f"Transaction is not finalized ({status}), waiting until its finalized")
-#         sleep(1)
-#         status_tx = client.solana_client.client.get_signature_statuses(
-#             [send_tx_resp.value]
-#         )
+    def _execute_query(
+        self,
+        query: str,
+        variables: dict,
+        name: str,
+        rpc_method: RPCMethod,
+    ):
+        logger.info(f"Executing tensor query in {rpc_method} mode")
+        rpc_func = (
+            self.execute_query_by_jito
+            if rpc_method == RPCMethod.JITO
+            else self.execute_query_by_native
+        )
+        return rpc_func(query=query, variables=variables, name=name)
