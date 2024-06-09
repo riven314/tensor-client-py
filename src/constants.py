@@ -1,3 +1,11 @@
+from enum import Enum
+
+
+class RPCMethod(str, Enum):
+    NATIVE = "NATIVE"
+    JITO = "JITO"
+
+
 SOLAMI_UNIT = 1_000_000_000
 
 # SOLANA RPC SETTINGS

@@ -3,7 +3,7 @@ import json
 from random import sample
 
 import requests
-from requests.exceptions import HTTPError, ProxyError
+from requests.exceptions import HTTPError, ProxyError, SSLError
 from retry import retry
 from solana.transaction import Transaction
 from solders.hash import Hash
@@ -42,7 +42,7 @@ class SolanaProxyJitoClient:
     # HTTPError reflects error from requests (Too Many Request Error)
     @logger.catch(reraise=True)
     @retry(exceptions=(HTTPError,), tries=60, delay=1, logger=logger)
-    @retry(exceptions=(ProxyError,), tries=60, delay=1, logger=logger)
+    @retry(exceptions=(ProxyError, SSLError), tries=60, delay=1, logger=logger)
     def send_jito_transaction(
         self, transaction: Transaction, recent_blockhash: Hash
     ) -> SendTransactionResp:
