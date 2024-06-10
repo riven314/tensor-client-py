@@ -1,10 +1,12 @@
+from typing import Union
+
 from solders.rpc.responses import SendTransactionResp
-from solders.transaction_status import TransactionConfirmationStatus
 
 import src.tensor.models as models
 import src.tensor.queries as queries
-from src.constants import RPCMethod
+from src.constants import RPCMethod, TransactionStatus
 from src.logger import logger
+from src.solana_rpc.models import SendBundleResp
 from src.tensor.base_client import TensorBaseClient
 from src.utils import to_solami
 
@@ -123,9 +125,12 @@ class TensorClient(TensorBaseClient):
         )
 
     def get_transaction_status(
-        self, transaction_resp: SendTransactionResp
-    ) -> TransactionConfirmationStatus | None:
-        return self.solana_client.get_transaction_status(transaction_resp)
+        self, transaction_resp: SendTransactionResp | SendBundleResp
+    ) -> TransactionStatus | None:
+        if isinstance(transaction_resp, SendTransactionResp):
+            return self.solana_client.get_transaction_status(transaction_resp)
+        else:
+            return self.jito_client.get_bundle_status(transaction_resp.result)
 
     def _execute_query(
         self,
@@ -133,11 +138,11 @@ class TensorClient(TensorBaseClient):
         variables: dict,
         name: str,
         rpc_method: RPCMethod,
-    ):
+    ) -> tuple[dict, Union[SendTransactionResp, SendBundleResp]]:
         logger.info(f"Executing tensor query in {rpc_method} mode")
         rpc_func = (
             self.execute_query_by_jito
             if rpc_method == RPCMethod.JITO
             else self.execute_query_by_native
         )
-        return rpc_func(query=query, variables=variables, name=name)
+        return rpc_func(query=query, variables=variables, name=name)  # type: ignore

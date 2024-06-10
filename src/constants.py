@@ -6,6 +6,17 @@ class RPCMethod(str, Enum):
     JITO = "JITO"
 
 
+class EncodingProtocol(str, Enum):
+    BASE64 = "base64"
+    BASE58 = "base58"
+
+
+class TransactionStatus(str, Enum):
+    PROCESSED = "PROCESSED"
+    CONFIRMED = "CONFIRMED"
+    FINALIZED = "FINALIZED"
+
+
 SOLAMI_UNIT = 1_000_000_000
 
 # SOLANA RPC SETTINGS
@@ -14,7 +25,7 @@ SOLANA_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"
 
 # JITO RPC SETTINGS
 JITO_TIP_IN_SOLAMI = 50_000
-JITO_MAIN_RPC_ENDPOINT = "https://mainnet.block-engine.jito.wtf/api/v1/transactions"
+JITO_MAIN_RPC_ENDPOINT = "https://mainnet.block-engine.jito.wtf"
 JITO_RPC_ENDPOINTS = [
     "https://mainnet.block-engine.jito.wtf",
     "https://amsterdam.mainnet.block-engine.jito.wtf",

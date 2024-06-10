@@ -16,3 +16,7 @@ class UnclassifiedStatusCodeError(Exception):
 
 class TransactionMissingError(Exception):
     pass
+
+
+class BadRequestError(Exception):
+    pass

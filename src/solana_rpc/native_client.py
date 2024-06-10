@@ -5,7 +5,7 @@ from solders.hash import Hash
 from solders.rpc.responses import SendTransactionResp
 from solders.transaction_status import TransactionConfirmationStatus
 
-from src.constants import SOLANA_RPC_ENDPOINT
+from src.constants import SOLANA_RPC_ENDPOINT, TransactionStatus
 from src.logger import logger
 from src.solana_rpc.base_client import SolanaBaseClient
 
@@ -37,14 +37,25 @@ class SolanaNativeClient(SolanaBaseClient):
         self,
         transaction_resp: SendTransactionResp,
         search_transaction_history: bool = True,
-    ) -> TransactionConfirmationStatus | None:
+    ) -> TransactionStatus | None:
         # search_transaction_history is False, it would only search on the recent status cache from RPC node
         status_resp = self.client.get_signature_statuses(
             [transaction_resp.value],
             search_transaction_history=search_transaction_history,
         )
         logger.debug(f"Transaction status: {status_resp.to_json()}")
-        assert len(status_resp.value) == 1
-        return (
-            status_resp.value[0].confirmation_status if status_resp.value[0] else None
-        )
+        assert (
+            len(status_resp.value) == 1
+        ), f"More than one transaction status: {status_resp.value}"
+        if status_resp.value[0] is None:
+            return None
+
+        confirmation_status = status_resp.value[0].confirmation_status
+        if confirmation_status == TransactionConfirmationStatus.Finalized:
+            return TransactionStatus.FINALIZED
+        elif confirmation_status == TransactionConfirmationStatus.Confirmed:
+            return TransactionStatus.CONFIRMED
+        elif confirmation_status == TransactionConfirmationStatus.Processed:
+            return TransactionStatus.PROCESSED
+        else:
+            raise ValueError(f"Unknown confirmation status: {confirmation_status}")

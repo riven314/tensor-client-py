@@ -21,6 +21,8 @@ from src.solana_rpc.native_client import SolanaNativeClient
 if TYPE_CHECKING:
     from solders.rpc.responses import SendTransactionResp
 
+    from src.solana_rpc.models import SendBundleResp
+
 
 class TensorBaseClient:
     def __init__(self, api_key: str, private_key: str):
@@ -97,16 +99,18 @@ class TensorBaseClient:
 
     def execute_query_by_jito(
         self, query: str, variables: dict[str, Any], name: str
-    ) -> "tuple[dict, SendTransactionResp]":
+    ) -> "tuple[dict, SendBundleResp]":
         tensor_resp = self.send_query(query, variables)
         tx_buffer = self._extract_transaction(tensor_resp, name)
         recent_blockhash = self.solana_client.get_latest_blockhash()
-        send_tx_resp = self.jito_client.execute_transaction(tx_buffer, recent_blockhash)
+        # for JITO, sendBundle is much stabler than sendTransaction
+        # send_tx_resp = self.jito_client.execute_transaction(tx_buffer, recent_blockhash)
+        send_tx_resp = self.jito_client.execute_bundle(tx_buffer, recent_blockhash)
         return tensor_resp, send_tx_resp
 
     def execute_query_with_fallback(
         self, query: str, variables: dict[str, Any], name: str
-    ) -> "tuple[dict, SendTransactionResp]":
+    ) -> "tuple[dict, SendTransactionResp | SendBundleResp]":
         try:
             return self.execute_query_by_jito(query, variables, name)
         except SolanaRpcException:
