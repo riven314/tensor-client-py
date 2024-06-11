@@ -58,9 +58,9 @@ class SolanaProxyJitoClient:
         response_model = GetBundleStatusesResp(**json.loads(response.text))
         values = response_model.result.value
 
-        assert len(values) == 1, f"More than one transaction status: {values}"
-        if values[0] is None:
+        if len(values) == 0 or values[0] is None:
             return None
+        assert len(values) == 1, f"More than one transaction status: {values}"
 
         confirmation_status = values[0].confirmation_status
         if confirmation_status == "finalized":
