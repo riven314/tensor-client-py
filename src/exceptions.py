@@ -20,3 +20,7 @@ class TransactionMissingError(Exception):
 
 class BadRequestError(Exception):
     pass
+
+
+class PoolAddressChangedError(Exception):
+    pass

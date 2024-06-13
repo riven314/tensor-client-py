@@ -138,8 +138,9 @@ class UserTswapBidResponse(BaseModel):
         return from_solami(float(self.pool.solBalance))
 
     @property
-    def bid_price(self) -> float:
-        assert self.pool.sellNowPrice
+    def bid_price(self) -> float | None:
+        if self.pool.sellNowPrice is None:
+            return None
         return from_solami(float(self.pool.sellNowPrice))
 
     @property

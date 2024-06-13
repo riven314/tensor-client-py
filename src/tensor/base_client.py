@@ -72,8 +72,7 @@ class TensorBaseClient:
             variables (dict): The GraphQL variables.
         """
         resp = self.session.post(
-            TENSOR_URL,
-            json={"query": query, "variables": variables},
+            TENSOR_URL, json={"query": query, "variables": variables}, timeout=5
         )
 
         if resp.status_code == 403:
@@ -85,6 +84,7 @@ class TensorBaseClient:
                 f"Unclassified Status code: {resp.status_code}, Text: {resp.text}"
             )
         elif resp.status_code == 200 and "errors" in resp.json():
+            logger.error(f"Unknown API error: {resp.json()['errors']}")
             raise UnknownAPIError(resp.json()["errors"])
 
         return resp.json().get("data", {})
