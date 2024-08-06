@@ -6,7 +6,7 @@ from random import sample
 import base58
 import requests
 from requests import Response
-from requests.exceptions import HTTPError, ProxyError, ReadTimeout, SSLError
+from requests.exceptions import HTTPError, ProxyError, SSLError, Timeout
 from retry import retry
 from solana.transaction import Transaction
 from solders.hash import Hash
@@ -50,10 +50,21 @@ class SolanaProxyJitoClient:
     # unlike native endpoint, it can't search thru the transaction history
     # setting {"searchTransactionHistory": True} as config won't work
     def get_bundle_status(self, bundle_id: str) -> TransactionStatus | None:
-        request_kwargs = self._get_bundle_request_kwargs(
-            [bundle_id], method_name="getBundleStatuses"
-        )
-        response = self._rpc_post_request(request_kwargs)
+        try:
+            logger.info(f"Getting bundle status with local IP address...")
+            request_kwargs = self._get_bundle_request_kwargs(
+                [bundle_id], method_name="getBundleStatuses", is_proxy=False
+            )
+            response = self._rpc_post_request(request_kwargs)
+        except Exception as e:
+            logger.warning(
+                f"Failed to get bundle status with local IP address due to {e.__class__.__name__}, fallback to proxy..."
+            )
+            request_kwargs = self._get_bundle_request_kwargs(
+                [bundle_id], method_name="getBundleStatuses", is_proxy=True
+            )
+            response = self._rpc_proxy_post_request(request_kwargs)
+
         logger.debug(f"Transaction status: {response.text}")
         response_model = GetBundleStatusesResp(**json.loads(response.text))
         values = response_model.result.value
@@ -103,10 +114,20 @@ class SolanaProxyJitoClient:
         encoded_transaction = self._sign_and_encode_transaction(
             transaction, encoding_protocol=EncodingProtocol.BASE58
         )
-        request_kwargs = self._get_bundle_request_kwargs(
-            [encoded_transaction], method_name="sendBundle"
-        )
-        response = self._rpc_post_request(request_kwargs)
+        try:
+            logger.info(f"Sending bundle with local IP address...")
+            request_kwargs = self._get_bundle_request_kwargs(
+                [encoded_transaction], method_name="sendBundle", is_proxy=False
+            )
+            response = self._rpc_post_request(request_kwargs)
+        except Exception as e:
+            logger.info(
+                f"Failed to send bundle with local IP address due to {e.__class__.__name__}, fallback to proxy..."
+            )
+            request_kwargs = self._get_bundle_request_kwargs(
+                [encoded_transaction], method_name="sendBundle"
+            )
+            response = self._rpc_proxy_post_request(request_kwargs)
         return SendBundleResp(**json.loads(response.text))
 
     def rpc_send_transaction(
@@ -121,39 +142,40 @@ class SolanaProxyJitoClient:
             transaction, encoding_protocol=EncodingProtocol.BASE64
         )
         request_kwargs = self._get_transaction_request_kwargs(encoded_transaction)
-        response = self._rpc_post_request(request_kwargs)
+        response = self._rpc_proxy_post_request(request_kwargs)
         return SendTransactionResp.from_json(response.text)  # type: ignore
 
-    # ProxyError reflects malfunction of proxy (often get this error)
-    # HTTPError reflects error from requests (Too Many Request Error)
-    # SSLError reflects the server refuse the connection because of abuse (we should backoff with longer delay)
-    @logger.catch(reraise=True)
-    @retry(
-        exceptions=(HTTPError, ReadTimeout, SSLError),
-        tries=120,
-        delay=0.5,
-        logger=logger,
-    )
-    @retry(exceptions=(ProxyError), tries=120, delay=0.5, logger=logger)
     def _rpc_post_request(self, request_kwargs: dict) -> Response:
-        proxy = self.proxy_rotator.get_random_proxy()
-        logger.info(f"Using proxy: {proxy}")
-        request_kwargs["proxies"] = {"https": proxy}
-
         response = requests.post(**request_kwargs)
         if response.status_code == 400:
             raise BadRequestError(response.text)
         response.raise_for_status()
         return response
 
+    # ProxyError reflects malfunction of proxy (often get this error)
+    # HTTPError reflects error from requests (Too Many Request Error)
+    # SSLError reflects the server refuse the connection because of abuse (we should backoff with longer delay)
+    @logger.catch(reraise=True)
+    @retry(
+        exceptions=(HTTPError, Timeout, SSLError),
+        tries=120,
+        delay=0.5,
+        logger=logger,
+    )
+    @retry(exceptions=(ProxyError), tries=120, delay=0.5, logger=logger)
+    def _rpc_proxy_post_request(self, request_kwargs: dict) -> Response:
+        proxy = self.proxy_rotator.get_random_proxy()
+        logger.info(f"Using proxy: {proxy}")
+        request_kwargs["proxies"] = {"https": proxy}
+        return self._rpc_post_request(request_kwargs)
+
     def _get_bundle_request_kwargs(
-        self, encoded_bundle: list[str], method_name: str
+        self, encoded_bundle: list[str], method_name: str, is_proxy: bool = True
     ) -> dict:
         params_array = [encoded_bundle]
-        return {
+        base_kwargs: dict = {
             "url": self.bundle_url,
             "headers": {"Content-Type": "application/json"},
-            "verify": False,
             "timeout": (5, 10),
             "data": json.dumps(
                 {
@@ -164,6 +186,9 @@ class SolanaProxyJitoClient:
                 }
             ),
         }
+        if is_proxy:
+            base_kwargs["verify"] = False
+        return base_kwargs
 
     def _get_transaction_request_kwargs(self, encoded_transaction: str) -> dict:
         proxy = self.proxy_rotator.get_random_proxy()

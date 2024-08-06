@@ -4,7 +4,7 @@ import random
 import requests
 import urllib3
 from requests import Response
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, SSLError, Timeout
 from retry import retry
 
 from src.constants import PROXY_REPO_URL
@@ -21,9 +21,9 @@ class ProxyRotator:
         self.proxies = self.load_proxies()
 
     @logger.catch(reraise=True)
-    @retry(exceptions=HTTPError, tries=5, delay=2, logger=logger)
+    @retry(exceptions=(HTTPError, Timeout, SSLError), tries=5, delay=2, logger=logger)
     def load_proxies(self):
-        response = requests.get(self.proxy_url)
+        response = requests.get(self.proxy_url, timeout=(5, 10))
         cleaned_proxies = self._clean_response(response)
         self._last_updated = datetime.datetime.now(datetime.UTC)
         logger.info(
