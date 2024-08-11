@@ -204,6 +204,39 @@ TSWAP_ACTIVE_ORDERS_QUERY = """query TensorSwapActiveOrders($slug: String!) {
   }
 }"""
 
+TSWAP_ACTIVE_LISTINGS_QUERY = """query ActiveListingsV2(
+  $slug: String!
+  $sortBy: ActiveListingsSortBy!
+  $filters: ActiveListingsFilters
+  $limit: Int
+  $cursor: ActiveListingsCursorInputV2
+) {
+  activeListingsV2(
+    slug: $slug
+    sortBy: $sortBy
+    filters: $filters
+    limit: $limit
+    cursor: $cursor
+  ) {
+    page {
+      endCursor {
+        str
+      }
+      hasMore
+    }
+    txs {
+      mint {
+        onchainId
+      }
+      tx {
+        sellerId
+        grossAmount
+        grossAmountUnit
+      }
+    }
+  }
+}
+"""
 
 TSWAP_PLACE_COLLECTION_BID_QUERY = """query TswapInitPoolTx(
   $config: PoolConfig!,

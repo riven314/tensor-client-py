@@ -56,20 +56,37 @@ class ActiveListingMint(BaseModel):
     onchainId: str
 
 
-class ActiveListingTx(BaseModel):
+class EndCursor(BaseModel):
+    str: str
+
+
+class Page(BaseModel):
+    endCursor: EndCursor
+    hasMore: bool
+
+
+class ListingTransaction(BaseModel):
     sellerId: str
     grossAmount: str
     grossAmountUnit: str
 
 
-class ActiveListingsPage(BaseModel):
-    str: str
-    hasMore: bool
+class ActiveListingTransaction(BaseModel):
+    mint: ActiveListingMint
+    tx: ListingTransaction
+
+    @property
+    def price(self) -> float:
+        return from_solami(float(self.tx.grossAmount))
+
+    @property
+    def seller_id(self) -> str:
+        return self.tx.sellerId
 
 
-class ActiveListingsV2Response(BaseModel):
-    page: ActiveListingsPage
-    txs: list[ActiveListingTx]
+class TswapActiveListingResponse(BaseModel):
+    page: Page
+    txs: list[ActiveListingTransaction]
 
 
 class TswapActiveOrderResponse(BaseModel):
@@ -97,6 +114,10 @@ class TswapActiveOrderResponse(BaseModel):
     @property
     def bid_price(self) -> float | None:
         return from_solami(float(self.sellNowPrice)) if self.sellNowPrice else None
+
+    @property
+    def ask_price(self) -> float | None:
+        return from_solami(float(self.buyNowPrice)) if self.buyNowPrice else None
 
     @property
     def sol_balance(self) -> float:
@@ -146,6 +167,6 @@ class UserTswapBidResponse(BaseModel):
     @property
     def is_in_effect(self) -> bool:
         if not self.bid_price:
-            logger.warning(f"Bid price is None, something is wrong: {self.pool}")
+
             return False
         return self.sol_balance >= self.bid_price

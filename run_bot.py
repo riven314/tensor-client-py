@@ -20,7 +20,11 @@ from src.exceptions import PoolAddressChangedError, TransactionMissingError
 from src.logger import logger
 from src.solana_rpc.models import SendBundleResp
 from src.tensor.client import TensorClient
-from src.tensor.models import TswapActiveOrderResponse, UserTswapBidResponse
+from src.tensor.models import (
+    CollectionStatsResponse,
+    TswapActiveOrderResponse,
+    UserTswapBidResponse,
+)
 
 API_KEY = os.environ.get("API_KEY")
 PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
@@ -35,7 +39,9 @@ if not API_KEY or not PRIVATE_KEY:
 
 
 def get_bot_bid_price(
-    active_bids: list[TswapActiveOrderResponse], is_show_log: bool
+    active_bids: list[TswapActiveOrderResponse],
+    collection_stats: CollectionStatsResponse,
+    is_show_log: bool,
 ) -> float:
     # bid_prices = [bid.bid_price for bid in active_bids]
     # if len(bid_prices) >= RANK:
@@ -48,8 +54,16 @@ def get_bot_bid_price(
     # assert bid_price is not None
     # return bid_price
     bid_prices = [bid.bid_price for bid in active_bids if bid.bid_price]
-    top_bid_price = bid_prices[0]
-    discounted_bid_price = round(top_bid_price * DISCOUNT, 5)
+    top_active_bid_price = bid_prices[0]
+    collection_top_bid_price = collection_stats.top_bid_price
+    collection_top_ask_price = collection_stats.top_ask_price
+    reference_price = min(
+        collection_top_bid_price, collection_top_ask_price, top_active_bid_price
+    )
+    discounted_bid_price = round(reference_price * DISCOUNT, 5)
+    logger.debug(
+        f"Top bid: {collection_top_bid_price:.5f} SOL, Top ask: {collection_top_ask_price:.5f} SOL, Target bid price: {discounted_bid_price:.5f} SOL"
+    )
 
     bid_prices = [bid.bid_price for bid in active_bids if bid.bid_price]
     rank_n = 5
@@ -59,8 +73,8 @@ def get_bot_bid_price(
     if discounted_bid_price > rank_bid_price:
         target_bid_price = rank_bid_price - 0.01
         if is_show_log:
-            logger.info(
-                f"Discounted bid price ({discounted_bid_price:.5f} SOL) is higher than "
+            logger.debug(
+                f"Target bid price ({discounted_bid_price:.5f} SOL) is higher than "
                 f"the {rank_n}-th bid price ({rank_bid_price:.5f} SOL), "
                 f"using adjusted rank bid price ({target_bid_price:.5f} SOL)."
             )
@@ -70,7 +84,9 @@ def get_bot_bid_price(
 
 
 def is_price_drift_too_much(
-    active_bids: list[TswapActiveOrderResponse], user_bid: UserTswapBidResponse
+    active_bids: list[TswapActiveOrderResponse],
+    user_bid: UserTswapBidResponse,
+    collection_stats: CollectionStatsResponse,
 ) -> tuple[bool, float]:
     # user_bid_price = user_bid.bid_price
     # bid_prices = [bid.bid_price for bid in active_bids]
@@ -80,7 +96,9 @@ def is_price_drift_too_much(
     # return abs(current_rank - RANK) >= 2 and user_bid_price != target_bid_price
     user_bid_price = user_bid.bid_price
     assert user_bid_price
-    target_bid_price = get_bot_bid_price(active_bids, is_show_log=False)
+    target_bid_price = get_bot_bid_price(
+        active_bids, collection_stats, is_show_log=True
+    )
     delta = abs(user_bid_price - target_bid_price) / target_bid_price
     is_drifted = delta >= DELTA_THRESHOLD
     delta_perc = round(delta * 100, 2)
@@ -177,6 +195,7 @@ def edit_nft_collection_bid_with_wait(
 def run_one_step(client: TensorClient, slug: str, rpc_method: RPCMethod):
     user_bids = client.get_user_nft_bids()
     active_bids = client.get_collection_bids(slug=slug)
+    collection_stats = client.get_collection_stats(slug=slug)
 
     if len(user_bids) == 0:
         logger.info("No bot bid active, placing a new bid")
@@ -198,7 +217,9 @@ def run_one_step(client: TensorClient, slug: str, rpc_method: RPCMethod):
         return
 
     user_bid = user_bids[0]
-    is_price_shifted, delta_perc = is_price_drift_too_much(active_bids, user_bid)
+    is_price_shifted, delta_perc = is_price_drift_too_much(
+        active_bids, user_bid, collection_stats
+    )
     if is_price_shifted:
         logger.info(
             f"Bot bid price has drifted too much ({delta_perc:.2f}%), update the existing bid"

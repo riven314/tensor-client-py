@@ -48,6 +48,22 @@ class TensorClient(TensorBaseClient):
         )
         return active_bids
 
+    # TODO: some listings are missing
+    def get_collection_listings(
+        self, slug: str
+    ) -> list[models.ActiveListingTransaction]:
+        variables = {
+            "slug": slug,
+            "sortBy": "PriceAsc",
+            "filters": {"sources": ["TENSORSWAP", "TCOMP"]},
+            "limit": 20,
+            "cursor": None,
+        }
+        data = self.send_query(queries.TSWAP_ACTIVE_LISTINGS_QUERY, variables)
+        active_listings = models.TswapActiveListingResponse(**data["activeListingsV2"])
+        return sorted(active_listings.txs, key=lambda listing: listing.price)
+
+    # TODO: some bids are missing
     def place_nft_collection_bid(
         self, slug: str, price: float, quantity: int, rpc_method: RPCMethod
     ):
