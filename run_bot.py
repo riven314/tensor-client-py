@@ -30,8 +30,8 @@ API_KEY = os.environ.get("API_KEY")
 PRIVATE_KEY = os.environ.get("PRIVATE_KEY")
 SLUG_DISPLAY = "bando_kids"
 RANK = 10
-DISCOUNT = 0.94
-DELTA_THRESHOLD = 0.03
+DISCOUNT = 0.91
+DELTA_THRESHOLD = 0.04
 NEXT_STEP_SEC = 5
 
 if not API_KEY or not PRIVATE_KEY:
