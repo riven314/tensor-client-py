@@ -200,7 +200,9 @@ def run_one_step(client: TensorClient, slug: str, rpc_method: RPCMethod):
     if len(user_bids) == 0:
         logger.info("No bot bid active, placing a new bid")
         active_bids = client.get_collection_bids(slug=slug)
-        bot_bid_price = get_bot_bid_price(active_bids, is_show_log=True)
+        bot_bid_price = get_bot_bid_price(
+            active_bids, collection_stats=collection_stats, is_show_log=True
+        )
         # wait and check the transaction is in effect
         place_nft_collection_bid_with_wait(
             client, slug, bot_bid_price, rpc_method=rpc_method
@@ -224,7 +226,9 @@ def run_one_step(client: TensorClient, slug: str, rpc_method: RPCMethod):
         logger.info(
             f"Bot bid price has drifted too much ({delta_perc:.2f}%), update the existing bid"
         )
-        new_bot_bid_price = get_bot_bid_price(active_bids, is_show_log=True)
+        new_bot_bid_price = get_bot_bid_price(
+            active_bids, collection_stats=collection_stats, is_show_log=True
+        )
         sol_delta = new_bot_bid_price - user_bid.sol_balance
         if sol_delta > 0:
             top_up_sol = round(sol_delta * 1.01, 8)
